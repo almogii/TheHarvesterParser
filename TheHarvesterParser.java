@@ -35,7 +35,6 @@ public class TheHarvesterParser {
 
         retVal.append("}");
 
-        File outputFile = new File(filePath);
         FileWriter writer = new FileWriter(filePath);
         writer.write(retVal.toString());
         writer.flush();
@@ -45,22 +44,26 @@ public class TheHarvesterParser {
     // domainName => ip1,ip2,ip...
     private static Map<String, String> parseHarvesterResult(String rawResult) {
         List<String> lst = getHostsList(rawResult);
+        Map<String, String> domainToIpsMapping = new HashMap<>();
 
-        Map<String, String> domainToIpsMapping = lst.stream().filter(s -> !s.trim().isEmpty()).
-                map(line -> line.split(":")).
-                collect(Collectors
-                        .groupingBy(line -> line[0],
-                                Collectors.mapping(line -> line.length == 2 ? line[1] : "",
-                                        Collectors.joining())));
+        if (lst != null) {
+            domainToIpsMapping = lst.stream().filter(s -> !s.trim().isEmpty()).
+                    map(line -> line.split(":")).
+                    collect(Collectors
+                            .groupingBy(line -> line[0],
+                                    Collectors.mapping(line -> line.length == 2 ? line[1] : "",
+                                            Collectors.joining())));
+        }
+
 
         return domainToIpsMapping;
     }
 
     private static List<String> getHostsList(String rawResult) {
-        String[] splitted = rawResult.split("Hosts found: [0-9]*\n" +
+        String[] split = rawResult.split("Hosts found: [0-9]*\n" +
                 "---------------------");
 
-        String rawHostsList = splitted[1];
+        String rawHostsList = split[1];
 
         if (rawHostsList != null && !rawHostsList.isEmpty()) {
             return Arrays.asList(rawHostsList.split("\n"));
@@ -72,9 +75,8 @@ public class TheHarvesterParser {
     private static String runHarvester(String domain, String searchEngines, Integer limit) {
         String commandToRun = String.format("python3 theHarvester.py -d %s -l %d -b %s", domain, limit, searchEngines);
         System.out.println("Running command: " + commandToRun);
-        String rawOutput = execCmd(commandToRun);
 
-        return rawOutput;
+        return execCmd(commandToRun);
     }
 
     public static String execCmd(String cmd) {
